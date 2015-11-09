@@ -1426,7 +1426,7 @@ function runTests(options) {
         options.cwd = sysPath.dirname(testPath);
         fs.mkdirSync(options.cwd);
         stdWatcher()
-          .on('all', spy)
+          .on('all', spy).on('all', console.log)
           .on('ready', function() {
             fs.writeFileSync(testPath, 'hello');
             waitFor([spy.withArgs('add', filename)], function() {
