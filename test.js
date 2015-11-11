@@ -1433,19 +1433,22 @@ function runTests(options) {
       });
       it('should be compatible with the cwd option', function(done) {
         var spy = sinon.spy();
-        var testPath = getFixturePath('subdir/add.txt');
-        var filename = sysPath.basename(testPath);
-        options.cwd = sysPath.dirname(testPath);
-        fs.mkdirSync(options.cwd);
-        stdWatcher()
-          .on('all', spy)
-          .on('ready', function() {
-            waitFor([spy.withArgs('add', filename)], function() {
-              spy.should.have.been.calledWith('add', filename);
-              done();
+        var subdir = getFixturePath('subdir');
+        var testPath = getFixturePath('add.txt');
+        var relative = sysPath.relative(subdir, testPath);
+        options.cwd = subdir;
+        fs.mkdir(options.cwd, function(err) {
+          if (err) throw err;
+          stdWatcher()
+            .on('all', spy)
+            .on('ready', function() {
+              d(fs.writeFile.bind(fs, testPath, 'hello', Function.prototype))();
+              waitFor([spy.withArgs('add', relative)], function() {
+                spy.should.have.been.calledWith('add', relative);
+                done();
+              });
             });
-            d(fs.writeFileSync.bind(fs, testPath, 'hello'))();
-          });
+        });
       });
     });
   });
