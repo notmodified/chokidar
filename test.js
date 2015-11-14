@@ -6,6 +6,7 @@ var expect = chai.expect;
 var should = chai.should();
 var sinon = require('sinon');
 chai.use(require('sinon-chai'));
+var stream = require('readable-stream');
 var fs = require('fs');
 var sysPath = require('path');
 var os = process.platform;
@@ -1393,6 +1394,38 @@ function runTests(options) {
               })();
             }());
           }.bind(this));
+      });
+      it('should not emit change events until stabilityThreshold has been reached', function(done) {
+        var spy = sinon.spy();
+        var changeSpy = sinon.spy();
+        var testPath = getFixturePath('change.txt');
+        var chunks = 2;
+        var feed_delay = 100;
+        var stability_threshold = 200;
+        var feeder = new stream.Readable({
+          read: function (n) {
+            if (chunks === 0) {
+              return this.push(null);
+            }
+            chunks--;
+            return setTimeout(function() {
+              this.push("chunky");
+            }.bind(this), feed_delay);
+          }
+        });
+
+        options.awaitWriteFinish = {stabilityThreshold: stability_threshold};
+        stdWatcher()
+          .on('all', spy)
+          .on('ready', function() {
+            watcher.on('change', changeSpy);
+            feeder.pipe(fs.createWriteStream(testPath));
+
+            setTimeout(function() {
+              changeSpy.should.have.been.calledOnce;
+              done();
+            }, (feed_delay * 2) + stability_threshold + 200); // 200 for a little leeway
+          });
       });
       it('should emit change event after the file is fully written', function(done) {
         var spy = sinon.spy();

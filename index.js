@@ -160,7 +160,7 @@ FSWatcher.prototype._emit = function(event, path, val1, val2, val3) {
     }
   }
 
-  if (event === 'change') {
+  if (!awf && event === 'change') {
     if (!this._throttle('change', path, 50)) return this;
   }
 
@@ -169,7 +169,7 @@ FSWatcher.prototype._emit = function(event, path, val1, val2, val3) {
     if (event !== 'error') this.emit.apply(this, ['all'].concat(args));
   }.bind(this);
 
-  if (awf && event === 'add' && this._readyEmitted) {
+  if (awf && (event === 'add' || event === 'change') && this._readyEmitted) {
     var awfEmit = function(err, stats) {
       if (err) {
         event = args[0] = 'error';
